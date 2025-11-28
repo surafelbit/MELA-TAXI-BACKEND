@@ -27,55 +27,70 @@ enum QRStatus {
   REPLACED
   EXPIRED
 }
+
 enum RequestStatus {
   PENDING
   APPROVED
   REJECTED
 }
+
+enum TransactionChannel {
+  CHAPA
+  CASH
+  BANK_TRANSFER
+  AGENT
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
 model PassengerRequest {
-  id              String        @id @default(uuid())
-  
-  passengerId     String
-  passenger       Passenger     @relation(fields: [passengerId], references: [id], onDelete: Cascade)
+  id String @id @default(uuid())
+
+  passengerId String
+  passenger   Passenger @relation(fields: [passengerId], references: [id], onDelete: Cascade)
 
   assignedAdminId String?
-  assignedAdmin   User?         @relation("AssignedPassengerRequests", fields: [assignedAdminId], references: [id], onDelete: SetNull)
+  assignedAdmin   User?   @relation("AssignedPassengerRequests", fields: [assignedAdminId], references: [id], onDelete: SetNull)
 
-  approvedById    String?
-  approvedBy      User?         @relation("ApprovedPassengerRequests", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedById String?
+  approvedBy   User?   @relation("ApprovedPassengerRequests", fields: [approvedById], references: [id], onDelete: SetNull)
 
-  reason          String?
-  status          RequestStatus @default(PENDING)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  reason    String?
+  status    RequestStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 }
 
 model User {
-  id           String   @id @default(uuid())
-  fullName     String
-  email        String?  @unique
-  phone        String   @unique
-  password     String
-  role         Role
-  photoUrl     String?
-  
-  approved     Boolean  @default(false)
+  id       String  @id @default(uuid())
+  fullName String
+  email    String? @unique
+  phone    String  @unique
+  password String
+  role     Role
+  photoUrl String?
+
+  approved Boolean @default(false)
 
   // ✅ Who approved this user
-  approvedBy       String?
-  approvedByUser   User?  @relation("ApprovedByRelation", fields: [approvedBy], references: [id])
-  approvedUsers    User[] @relation("ApprovedByRelation")
+  approvedBy     String?
+  approvedByUser User?   @relation("ApprovedByRelation", fields: [approvedBy], references: [id])
+  approvedUsers  User[]  @relation("ApprovedByRelation")
 
   // ✅ Who registered this user
-  registeredBy       String?
-  registeredByUser   User?  @relation("RegisteredByRelation", fields: [registeredBy], references: [id])
-  registeredUsers    User[] @relation("RegisteredByRelation")
-
+  registeredBy              String?
+  registeredByUser          User?              @relation("RegisteredByRelation", fields: [registeredBy], references: [id])
+  registeredUsers           User[]             @relation("RegisteredByRelation")
+  transacrionInitiated      Transaction[]      @relation("TransactionsInitiated")
   assignedPassengerRequests PassengerRequest[] @relation("AssignedPassengerRequests")
   approvedPassengerRequests PassengerRequest[] @relation("ApprovedPassengerRequests")
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   wallet        Wallet?
   passenger     Passenger?
@@ -84,95 +99,95 @@ model User {
   notifications Notification[]
 }
 
-
-
-
-
 model Passenger {
-  id        String        @id @default(uuid())
-  userId    String        @unique
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  qrCode    String        @unique
+  qrCode    String?             @unique
+  qrToken   String?   @unique  // <-- new: random token used for QR scan
   qrCard    PhysicalCard?
-  isDigital Boolean       @default(true)
+  isDigital Boolean            @default(true)
   requests  PassengerRequest[]
 }
 
 model Driver {
-  id      String   @id @default(uuid())
-  userId  String   @unique
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   vehicles Vehicle[]
 }
 
-
 model Agent {
-  id         String   @id @default(uuid())
-  userId     String   @unique
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   outletName String
 }
 
-
 model Vehicle {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   driverId    String?
-  driver      Driver?  @relation(fields: [driverId], references: [id])
-  plateNumber String   @unique
+  driver      Driver? @relation(fields: [driverId], references: [id])
+  plateNumber String  @unique
   capacity    Int?
   route       String?
 }
 
-
 model Wallet {
-  id          String       @id @default(uuid())
-  userId      String       @unique
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  balance     Float        @default(0.0)
-  status      WalletStatus @default(ACTIVE)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  balance   Float        @default(0.0)
+  status    WalletStatus @default(ACTIVE)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 
   transactions Transaction[]
 }
 
-
 model Transaction {
-  id        String   @id @default(uuid())
-  walletId  String
-  wallet    Wallet   @relation(fields: [walletId], references: [id])
-  type      String
-  channel   String
-  amount    Float
+  id            String             @id @default(uuid())
+  initiatedById String? // optional: actor
+  initiatedBy   User?              @relation("TransactionsInitiated", fields: [initiatedById], references: [id])
+  walletId      String
+  wallet        Wallet             @relation(fields: [walletId], references: [id])
+  type          String
+  channel       TransactionChannel
+  status        TransactionStatus  @default(SUCCESS)
+
+  amount          Float
+  previousBalance Float
+  newBalance      Float
+  description     String?
+  metadata        Json?
+  reference     String  @unique
+
   createdBy String?
   createdAt DateTime @default(now())
-
 }
 
 model PhysicalCard {
-  id          String     @id @default(uuid())
-  passengerId String     @unique
-  passenger   Passenger  @relation(fields: [passengerId], references: [id])
-  status      QRStatus   @default(ACTIVE)
+  id          String    @id @default(uuid())
+  passengerId String    @unique
+  passenger   Passenger @relation(fields: [passengerId], references: [id])
+  status      QRStatus  @default(ACTIVE)
   issuedBy    String?
-  printed     Boolean    @default(true)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-
+  printed     Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Notification {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   title     String
   message   String
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
 }
-

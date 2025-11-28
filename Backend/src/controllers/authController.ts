@@ -64,10 +64,10 @@ export const registerPassenger = async (req: Request, res: Response) => {
       },
     });
     const assignedAdmin = await getNextAdmin();
-    let qrCode = "";
+    // let qrCode = "";
     const passenger = await prisma.passenger.create({
       data: {
-        qrCode,
+        // qrCode,
         userId: user.id,
         isDigital: true,
       },
@@ -162,6 +162,14 @@ export const createDriver = async (req: Request, res: Response) => {
     const existingUser = await prisma.user.findFirst({
       where: { OR: [{ phone }, { email }] },
     });
+    const existingVehicle = await prisma.vehicle.findUnique({
+      where: { plateNumber },
+    });
+    if (existingVehicle) {
+      return res.status(404).json({
+        message: `The Vehicle With ${plateNumber} Has Been Already Registered.`,
+      });
+    }
     if (existingUser) {
       return res
         .status(404)
@@ -271,6 +279,19 @@ export const createAgent = async (req: Request, res: Response) => {
       error: "Internal Server Error",
     });
   }
+};
+export const getMe = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const result = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { passenger: true },
+    });
+    console.log(result);
+    res.status(200).json({
+      result,
+    });
+  } catch (error) {}
 };
 export const loginUser = async (req: Request, res: Response) => {
   try {
@@ -385,6 +406,7 @@ export const createPhysicalQrPassenger = async (
         password: hashedPassword,
         phone,
         role: Role.PASSENGER,
+        registeredBy: requestingUser.id,
         photoUrl,
         approved: false,
       },
@@ -411,12 +433,7 @@ export const createPhysicalQrPassenger = async (
       },
     });
 
-    await prisma.wallet.create({
-      data: {
-        userId: PhysicalCardUser.id,
-        balance: 0,
-      },
-    });
+  
     return res.status(201).json({
       message: "Passenger registered successfully, approval request sent.",
       userId: PhysicalCardUser.id,

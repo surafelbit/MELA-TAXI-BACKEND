@@ -21,7 +21,7 @@ const fileFilter = (
   if (file.mimetype.startsWith("image/")) {
     cb(null, true);
   } else {
-    cb(new Error("Only images are allowed"), false);
+    cb(new Error("INVALID_FILE_TYPE"), false);
   }
 };
 export const upload = multer({ storage, fileFilter });

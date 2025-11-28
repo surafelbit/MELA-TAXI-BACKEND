@@ -6,34 +6,38 @@ import {
   createAgent,
   createPhysicalQrPassenger,
   createDriver,
+  getMe,
 } from "../controllers/authController";
+import { uploadImage } from "../utils/uploadImage";
 import { upload } from "../middleware/upload";
 import { protect } from "../middleware/auth";
 const router = Router();
-router.post("/register", upload.single("photo"), registerPassenger); // passenger registration
-router.post("/login", upload.single("photo"), loginUser);
+router.post("/register", uploadImage("photo"), registerPassenger); // passenger registration
+// router.post("/login", upload.single("photo"), loginUser);
+router.post("/login", uploadImage("photo"), loginUser);
+router.get("/get-me/:userId", protect([]), getMe);
 router.post(
   "/create-admin",
   protect(["SUPER_ADMIN"]),
-  upload.single("photo"),
+  uploadImage("photo"),
   createAdmin
 );
 router.post(
   "/create-agent",
   protect(["SUPER_ADMIN", "ADMIN"]),
-  upload.single("photo"),
+  uploadImage("photo"),
   createAgent
 );
 router.post(
   "/create-manual-passenger",
   protect(["AGENT"]),
-  upload.single("photo"),
+  uploadImage("photo"),
   createPhysicalQrPassenger
 );
 router.post(
   "/create-driver",
   protect(["ADMIN"]),
-  upload.single("photo"),
+  uploadImage("photo"),
   createDriver
 );
 export default router;
