@@ -54,5 +54,6 @@ export async function receiveFairFromPassenger(req: Request, res: Response) {
         reference: uuid(),
       },
     });
+    // obviously a comment
   } catch (error) {}
 }
