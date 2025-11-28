@@ -4,6 +4,7 @@ import path from "path";
 import authRoutes from "../src/routes/authRoutes";
 import adminRoutes from "./routes/adminRoutes";
 import paymentRoutes from "./routes/paymentRoutes";
+import driverRoutes from "./routes/driverRoutes";
 dotenv.config();
 
 const app = express();
@@ -13,6 +14,7 @@ app.use("/uploads", express.static(path.join(process.cwd(), "uploads"))); // ser
 app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
 app.use("/payment", paymentRoutes);
+app.use("/driver", driverRoutes);
 app.get("/", (req, res) => {
   res.send("Backend is running!");
 });
