@@ -6,6 +6,11 @@ export async function receiveFairFromPassenger(req: Request, res: Response) {
   try {
     const driver = req.user;
     const driverId = driver.id;
+    const driverInfo = await prisma.user.findUnique({
+      where: { id: driverId },
+      // include: { user: true },
+    });
+    console.log(driverId, driverInfo, "this is the driver id");
     const { qrCode, amount } = req.body;
     const passenger = await prisma.passenger.findUnique({
       where: {
@@ -20,7 +25,8 @@ export async function receiveFairFromPassenger(req: Request, res: Response) {
       return res.status(404).json({ error: "Passenger or wallet not found" });
     }
     const wallet = passenger.user.wallet;
-    const driverWallet = driver.user.wallet;
+    console.log(driver, driverInfo, "driver and his user data");
+    const driverWallet = driverInfo.user.wallet;
     const previousBalance = wallet.balance;
     const previousBalanceDriver = driverWallet.balance;
     const newBalance = previousBalance + amount;
@@ -54,5 +60,16 @@ export async function receiveFairFromPassenger(req: Request, res: Response) {
         reference: uuid(),
       },
     });
-  } catch (error) {}
+    return res.status(200).json({
+      transactionDriver,
+      transaction,
+      updateWalletDriver,
+      updatedWallet,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(400).json({
+      error,
+    });
+  }
 }

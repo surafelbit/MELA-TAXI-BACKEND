@@ -1,4 +1,6 @@
 import { Router } from "express";
-import { getPassenger } from "../controllers/driverController";
-const route = Router();
-route.get("/get-passenger");
+import { receiveFairFromPassenger } from "../controllers/driverController";
+import { protect } from "../middleware/auth";
+const router = Router();
+router.post("/receive-fair", protect(["DRIVER"]), receiveFairFromPassenger);
+export default router;
