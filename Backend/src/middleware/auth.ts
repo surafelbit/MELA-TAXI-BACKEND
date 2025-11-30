@@ -27,7 +27,6 @@ export interface AuthRequest extends Request {
   user?: { id: string; role: string };
 }
 export const protect = (roles: string[] = []) => {
-  console.log("this middleware is involved now");
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const authHeader = req.headers.authorization;

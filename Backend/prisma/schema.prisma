@@ -154,7 +154,7 @@ model Transaction {
   initiatedById String? // optional: actor
   initiatedBy   User?              @relation("TransactionsInitiated", fields: [initiatedById], references: [id])
   walletId      String
-  wallet        Wallet             @relation(fields: [walletId], references: [id])
+  wallet        Wallet             @relation(fields: [walletId], references: [id], onDelete: Cascade)
   type          String
   channel       TransactionChannel
   status        TransactionStatus  @default(SUCCESS)
