@@ -18,15 +18,10 @@ export const verifyPayment = async (req: Request, res: Response) => {
         },
       }
     );
-    console.log(
-      result,
-      "this is the result whatever it is gooing to be really long"
-    );
+
     const user_id = (trx_ref as string).split("_")[1];
-    console.log(user_id, "user id");
     if (result.data.data.status === "success") {
       // update wallet in DB
-      console.log("succesffully paid");
       const user = await prisma.user.findUnique({ where: { id: user_id } });
       const existingTx = await prisma.transaction.findUnique({
         where: { reference: trx_ref }, // trx_ref comes from Chapa
@@ -45,7 +40,6 @@ export const verifyPayment = async (req: Request, res: Response) => {
           balance: { increment: result.data.data.amount || 0 }, // use actual amount
         },
       });
-      console.log(updateOfWallet, "means the wallet is update");
       const transaction = await prisma.transaction.create({
         data: {
           walletId: updateOfWallet.id,
@@ -71,7 +65,6 @@ export const verifyPayment = async (req: Request, res: Response) => {
           amount: result.data.data.amount,
           newBalance: updateOfWallet.balance,
         });
-      console.log("this also means transaction is also made", transaction);
       return res.status(200).json({
         success: true,
         message: "Payment verified and wallet updated",
@@ -82,7 +75,6 @@ export const verifyPayment = async (req: Request, res: Response) => {
         },
       });
     } else {
-      console.log("i guess the payment is not succesffull");
     }
   } catch (err) {
     console.error(err, "this is the error on the payment verification");
@@ -91,8 +83,6 @@ export const verifyPayment = async (req: Request, res: Response) => {
 };
 export const initializePayment = async (req: Request, res: Response) => {
   try {
-    console.log(req.user, "this is the attached user");
-
     const { amount, email, phone, fullName } = req.body;
     const randomLetter = Math.random().toString(36).substring(2, 10);
     const user_id = req.user.id;
@@ -115,15 +105,10 @@ export const initializePayment = async (req: Request, res: Response) => {
       }
     );
 
-    console.log(result.data?.data?.checkout_url);
     return res.json({
       checkout_url: result.data?.data?.checkout_url,
       // tx_ref,
     });
-    // return res.json({
-    //     checkout_url: results.data.checkout_url,
-    //     tx_ref,
-    //   });
   } catch (err) {
     console.log(err);
     console.log(err?.response?.data);

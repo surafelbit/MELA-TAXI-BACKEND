@@ -8,9 +8,8 @@ export async function receiveFairFromPassenger(req: Request, res: Response) {
     const driverId = driver.id;
     const driverInfo = await prisma.user.findUnique({
       where: { id: driverId },
-      // include: { user: true },
+      include: { wallet: true },
     });
-    console.log(driverId, driverInfo, "this is the driver id");
     const { qrCode, amount } = req.body;
     const passenger = await prisma.passenger.findUnique({
       where: {
@@ -25,11 +24,11 @@ export async function receiveFairFromPassenger(req: Request, res: Response) {
       return res.status(404).json({ error: "Passenger or wallet not found" });
     }
     const wallet = passenger.user.wallet;
-    console.log(driver, driverInfo, "driver and his user data");
-    const driverWallet = driverInfo.user.wallet;
+
+    const driverWallet = driverInfo?.wallet;
     const previousBalance = wallet.balance;
-    const previousBalanceDriver = driverWallet.balance;
-    const newBalance = previousBalance + amount;
+    const previousBalanceDriver = driverWallet?.balance;
+    const newBalance = previousBalance - amount;
     const newBalanceDriver = previousBalanceDriver + amount;
     const updatedWallet = await prisma.wallet.update({
       where: { id: wallet.id },
@@ -42,7 +41,10 @@ export async function receiveFairFromPassenger(req: Request, res: Response) {
     });
     const transaction = await prisma.transaction.create({
       data: {
+        channel: "BANK_TRANSFER",
+
         walletId: wallet.id,
+        type: "something",
         status: "SUCCESS",
         amount,
         previousBalance,
@@ -52,10 +54,12 @@ export async function receiveFairFromPassenger(req: Request, res: Response) {
     });
     const transactionDriver = await prisma.transaction.create({
       data: {
-        wallet: driverWallet.id,
+        channel: "BANK_TRANSFER",
+        walletId: driverWallet?.id,
+        type: "something",
         status: "SUCCESS",
         amount,
-        previousBalance: previousBalanceDriver,
+        previousBalance: Number(previousBalanceDriver),
         newBalance: newBalanceDriver,
         reference: uuid(),
       },
@@ -67,9 +71,9 @@ export async function receiveFairFromPassenger(req: Request, res: Response) {
       updatedWallet,
     });
   } catch (error) {
-    // console.log(error);
-    // return res.status(400).json({
-    //   error,
-    // });
+    console.log(error);
+    return res.status(400).json({
+      error,
+    });
   }
 }

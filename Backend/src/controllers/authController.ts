@@ -27,7 +27,6 @@ const getNextAdmin = async (): Promise<{ id: string; fullName: string }> => {
 };
 export const registerPassenger = async (req: Request, res: Response) => {
   try {
-    console.log(req.body);
     const { fullName, email, phone, password } = req.body;
 
     if (!fullName || !phone || !password) {
@@ -214,6 +213,7 @@ export const createDriver = async (req: Request, res: Response) => {
       user,
       driver,
       vehicle,
+      wallet,
     });
   } catch (err) {
     console.log(err);
@@ -225,7 +225,6 @@ export const createAgent = async (req: Request, res: Response) => {
     const { phone, password, email, fullName } = req.body;
 
     const requestingUser = req.user;
-    console.log(requestingUser.role);
     if (
       !requestingUser ||
       (requestingUser.role !== "SUPER_ADMIN" && requestingUser.role !== "ADMIN")
@@ -287,7 +286,6 @@ export const getMe = async (req: Request, res: Response) => {
       where: { id: userId },
       include: { passenger: true },
     });
-    console.log(result);
     res.status(200).json({
       result,
     });
@@ -433,7 +431,6 @@ export const createPhysicalQrPassenger = async (
       },
     });
 
-  
     return res.status(201).json({
       message: "Passenger registered successfully, approval request sent.",
       userId: PhysicalCardUser.id,
