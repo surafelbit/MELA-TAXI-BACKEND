@@ -293,6 +293,7 @@ export const getMe = async (req: Request, res: Response) => {
 };
 export const loginUser = async (req: Request, res: Response) => {
   try {
+    let payload = {};
     const { phone, password } = req.body;
 
     if (!phone || !password) {
@@ -309,12 +310,20 @@ export const loginUser = async (req: Request, res: Response) => {
             },
           },
         },
+        driver: {
+          include: {
+            vehicles: true,
+          },
+        },
       },
     });
+    console.log(user?.driver?.vehicles[0], "driver info");
+    console.log(user, "driver info");
 
     if (!user) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
+
     if (user.passenger) {
       const latestRequest = user.passenger.requests[0];
       if (latestRequest) {
@@ -330,16 +339,26 @@ export const loginUser = async (req: Request, res: Response) => {
         }
       }
     }
+
+    if (user.driver) {
+      payload = {
+        id: user.id,
+        role: user.role,
+        plateNo: user.driver.vehicles[0].id,
+      };
+    }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
     // JWT payload
-    const payload = {
-      id: user.id,
-      role: user.role,
-    };
+    if (user.passenger) {
+      payload = {
+        id: user.id,
+        role: user.role,
+      };
+    }
     const token = jwt.sign(payload, process.env.JWT_SECRET!, {
       expiresIn: "7d",
     });
