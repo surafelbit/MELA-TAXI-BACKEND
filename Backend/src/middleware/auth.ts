@@ -38,6 +38,7 @@ export const protect = (roles: string[] = []) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
         id: string;
         role: string;
+        plateNo?: string;
       };
       if (roles.length && !roles.includes(decoded.role)) {
         return res.status(403).json({ error: "Forbidden: restricted role" });
@@ -46,7 +47,7 @@ export const protect = (roles: string[] = []) => {
       next();
     } catch (error) {
       console.error(error);
-      return res.status(401).json({ error: "Not authorized" });
+      return res.status(403).json({ error: "Not authorized" });
     }
   };
 };

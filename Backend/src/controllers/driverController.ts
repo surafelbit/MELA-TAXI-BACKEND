@@ -5,12 +5,15 @@ import { v4 as uuid } from "uuid";
 export async function receiveFairFromPassenger(req: Request, res: Response) {
   try {
     const driver = req.user;
+    console.log(req.user);
+    const vehicleId = req.user.plateNo;
     const driverId = driver.id;
     const driverInfo = await prisma.user.findUnique({
       where: { id: driverId },
-      include: { wallet: true },
+      include: { wallet: true, driver: true },
     });
-    const { qrCode, amount } = req.body;
+
+    const { qrCode, amount, routes } = req.body;
     const passenger = await prisma.passenger.findUnique({
       where: {
         qrCode: qrCode,
@@ -19,7 +22,26 @@ export async function receiveFairFromPassenger(req: Request, res: Response) {
         user: { include: { wallet: true } },
       },
     });
-
+    // const vehicle = await prisma.vehicle.findUnique({
+    //   where: { plateNumber: vehicleId },
+    // });
+    // console.log(driverInfo?.driver?.id, "DRIVER INFO");
+    console.log(vehicleId, "VEHICLE ID");
+    const trip = await prisma.trip.create({
+      data: {
+        vehicleId: vehicleId,
+        driverId: driverInfo?.driver?.id,
+        route: routes,
+      },
+    });
+    const tripPassenger = await prisma.tripPassenger.create({
+      data: {
+        tripId: trip.id,
+        passengerId: passenger?.id,
+        fare: amount,
+      },
+    });
+    console.log(trip, "trip recorded");
     if (!passenger || !passenger.user?.wallet) {
       return res.status(404).json({ error: "Passenger or wallet not found" });
     }
@@ -69,6 +91,8 @@ export async function receiveFairFromPassenger(req: Request, res: Response) {
       transaction,
       updateWalletDriver,
       updatedWallet,
+      trip,
+      tripPassenger,
     });
   } catch (error) {
     console.log(error);
